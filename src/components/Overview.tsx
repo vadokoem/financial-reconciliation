@@ -280,18 +280,26 @@ const Overview: React.FC<OverviewProps> = ({
 
 return (
     <div className="space-y-6">
-        {user === 'barbara' && (
-            <>
-                {uploadedFile ? (
-                    <UploadSummary 
-                        fileName={uploadedFile}
-                        onComplete={handleSummaryComplete}
-                    />
-                ) : (
-                    <FileUpload onUploadSuccess={handleUploadSuccess} />
-                )}
-            </>
+      {user === 'barbara' && process.env.NODE_ENV === 'development' && (
+    <>
+        {uploadedFile ? (
+            <UploadSummary 
+                fileName={uploadedFile}
+                onComplete={handleSummaryComplete}
+            />
+        ) : (
+            <FileUpload onUploadSuccess={handleUploadSuccess} />
         )}
+    </>
+)}
+
+{user === 'barbara' && process.env.NODE_ENV === 'production' && (
+    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <p className="text-sm text-yellow-700">
+            La funzionalità di upload sarà disponibile a breve.
+        </p>
+    </div>
+)}
 
         {data && (
             <>

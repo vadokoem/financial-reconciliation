@@ -4,6 +4,7 @@ import DetailedView from './components/DetailedView';
 import { financialApi } from './api/financialApi';
 import { FinancialData, Filters } from './types/financial';
 import LoadingSpinner from './components/LoadingSpinner';
+import { placeholderData } from './mockData';
 
 const App: React.FC = () => {
     const [user, setUser] = useState<'barbara' | 'cfo'>('barbara');
@@ -20,14 +21,26 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isRefreshPending, setIsRefreshPending] = useState<boolean>(false);
 
-    const fetchData = useCallback(async () => {
+ const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await financialApi.getFinancialData();
-            setFinancialData(data);
+            if (process.env.NODE_ENV === 'development') {
+                const data = await financialApi.getFinancialData();
+                setFinancialData(data);
+            } else {
+                // In production, use placeholder data for now
+                setFinancialData(placeholderData);
+            }
             setError(null);
         } catch (err) {
-            setError('Failed to fetch data: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            console.error('Error fetching data:', err);
+            // In production, fallback to placeholder data on error
+            if (process.env.NODE_ENV === 'production') {
+                setFinancialData(placeholderData);
+                setError('Dati temporaneamente non disponibili. Visualizzazione dati di esempio.');
+            } else {
+                setError('Failed to fetch data: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            }
         } finally {
             setLoading(false);
         }
@@ -70,6 +83,13 @@ const App: React.FC = () => {
 
     return (
         <div className="max-w-6xl mx-auto p-6">
+		 {process.env.NODE_ENV === 'production' && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <p className="text-sm text-blue-700">
+                    Applicazione in fase di sviluppo. I dati visualizzati sono di esempio.
+                </p>
+            </div>
+        )}	
             <div className="mb-6 flex justify-between items-center">
                 <h1 className="text-2xl font-bold">Riconciliazione Finanziaria</h1>
                 <select 
