@@ -1,0 +1,113 @@
+import axios from 'axios';
+import { FinancialData } from '../types/financial';
+
+// API Response type for better type safety
+interface ApiResponse<T> {
+    data: T;
+    status: number;
+    message?: string;
+}
+
+// File upload form data interface
+interface UploadFormData extends FormData {
+    get(name: 'scadenze'): File | null;
+    get(name: 'bank'): File | null;
+}
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000'; // Keep at 3000 for MSW testing
+
+const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+export const financialApi = {
+    /**
+     * Upload financial files
+     * @param formData - FormData containing scadenze and bank files
+     */
+    uploadFiles: async (formData: FormData): Promise<void> => {
+        const scadenze = formData.get('scadenze');
+        const bank = formData.get('bank');
+
+        if (!scadenze || !bank) {
+            throw new Error('Both files are required');
+        }
+
+        try {
+            const response = await axiosInstance.post<ApiResponse<void>>('/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.status !== 200) {
+                throw new Error(response.data.message || 'Upload failed');
+            }
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                throw new Error(
+                    error.response?.data?.message || 
+                    error.message || 
+                    'Upload failed'
+                );
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get financial data
+     * @returns Promise<FinancialData>
+     */
+    getFinancialData: async (): Promise<FinancialData> => {
+        try {
+            const response = await axiosInstance.get<ApiResponse<FinancialData>>('/financial-data');
+            
+            if (!response.data.data) {
+                throw new Error('Invalid data format received');
+            }
+
+            return response.data.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                throw new Error(
+                    error.response?.data?.message || 
+                    error.message || 
+                    'Failed to fetch financial data'
+                );
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get reconciliation status
+     * @returns Promise<{ status: string; message: string }>
+     */
+    getReconciliationStatus: async (): Promise<{ status: string; message: string }> => {
+        try {
+            const response = await axiosInstance.get<ApiResponse<{ status: string; message: string }>>('/reconciliation-status');
+            
+            if (!response.data.data) {
+                throw new Error('Invalid status format received');
+            }
+
+            return response.data.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                throw new Error(
+                    error.response?.data?.message || 
+                    error.message || 
+                    'Failed to fetch reconciliation status'
+                );
+            }
+            throw error;
+        }
+    }
+};
+
+// Export type for usage in components
+export type { UploadFormData };
